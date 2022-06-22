@@ -2,18 +2,18 @@ exports.handler = async (event, context) => {
     let statusCode = 200
     let body = 'Hello from Lambda!'
     const { awsRequestId } = context
-    const contentKey = event.params.querystring.contentKey
-    if (contentKey === 'test404') {
+    const contentEntryKey = event.params.querystring.contentEntryKey
+    if (contentEntryKey === 'test404') {
         statusCode = 404
         body = 'Content not found'
         context.fail(JSON.stringify({
             statusCode,
             body,
-            contentKey,
+            contentEntryKey,
             awsRequestId
         }))
     }
-    if (contentKey === 'test500') {
+    if (contentEntryKey === 'test500') {
         statusCode = 500
         body = 'Server Error'
         const response = {

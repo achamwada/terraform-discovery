@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "ContentNotFoundModel",
+    "type": "object",
+    "properties": {
+        "statusCode": {
+            "type": "integer"
+        },
+        "contentKey": {
+            "type": "string"
+        },
+        "message": {
+            "type": "string"
+        },
+        "correlationId": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "statusCode",
+        "contentKey",
+        "message",
+        "correlationId"
+    ]
+}

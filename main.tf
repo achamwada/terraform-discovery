@@ -93,9 +93,7 @@ resource "aws_api_gateway_method" "get-method" {
   api_key_required = false
   authorization    = "NONE"
   http_method      = "GET"
-  # request_models = {
-  #   "application/json" = "Error"
-  # }
+
   request_parameters = {
     "method.request.querystring.contentEntryKey" = true
     "method.request.querystring.contentType"     = true
@@ -149,13 +147,51 @@ resource "aws_api_gateway_integration_response" "integration_response_200" {
   selection_pattern = ""
 
 
+
 }
+
+
+
+
+
+
+
+resource "aws_api_gateway_model" "error-404" {
+  rest_api_id  = var.rest-api-id
+  name         = "error404"
+  description  = "a JSON schema"
+  content_type = "application/json"
+
+  schema = file("./templates/schemas/_404.json")
+
+}
+
+
+resource "aws_api_gateway_model" "error-500" {
+  rest_api_id  = var.rest-api-id
+  name         = "error500"
+  description  = "a JSON schema"
+  content_type = "application/json"
+
+  schema = file("./templates/schemas/_500.json")
+
+}
+
+
+
+
+
+
 
 resource "aws_api_gateway_method_response" "response_404" {
   rest_api_id = var.rest-api-id
   resource_id = aws_api_gateway_resource.v2.id
   http_method = aws_api_gateway_method.get-method.http_method
   status_code = "404"
+
+  response_models = {
+    "application/json" = aws_api_gateway_model.error-404.name
+  }
 }
 
 
@@ -179,6 +215,10 @@ resource "aws_api_gateway_method_response" "response_500" {
   resource_id = aws_api_gateway_resource.v2.id
   http_method = aws_api_gateway_method.get-method.http_method
   status_code = "500"
+
+  response_models = {
+    "application/json" = aws_api_gateway_model.error-500.name
+  }
 }
 
 

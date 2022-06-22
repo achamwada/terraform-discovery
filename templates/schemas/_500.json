@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "InternalServerErrorModel",
+    "type": "object",
+    "properties": {
+        "statusCode": {
+            "type": "number"
+        },
+        "message": {
+            "type": "string"
+        },
+        "correlationId": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "statusCode",
+        "message",
+        "correlationId"
+    ]
+}
