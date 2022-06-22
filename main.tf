@@ -111,8 +111,13 @@ resource "aws_api_gateway_integration" "integration" {
   resource_id             = aws_api_gateway_resource.v2.id
   integration_http_method = "POST"
   http_method             = aws_api_gateway_method.get-method.http_method
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.content-v2-asset.invoke_arn
+  type                    = "AWS"
+
+  uri                  = aws_lambda_function.content-v2-asset.invoke_arn
+  passthrough_behavior = "WHEN_NO_TEMPLATES"
+  request_templates = {
+    "application/json" = file("./templates/get-method-integration-request.vtl")
+  }
 
 
 }
@@ -125,3 +130,81 @@ resource "aws_lambda_permission" "apigw_lambda" {
   source_arn    = "arn:aws:execute-api:eu-west-1:927362808381:${var.rest-api-id}/test-invoke-stage/GET/${aws_api_gateway_resource.content.path_part}/${aws_api_gateway_resource.v2.path_part}"
 }
 
+
+
+
+resource "aws_api_gateway_method_response" "response_200" {
+  rest_api_id = var.rest-api-id
+  resource_id = aws_api_gateway_resource.v2.id
+  http_method = aws_api_gateway_method.get-method.http_method
+  status_code = "200"
+
+}
+
+resource "aws_api_gateway_integration_response" "integration_response_200" {
+  rest_api_id       = var.rest-api-id
+  resource_id       = aws_api_gateway_resource.v2.id
+  http_method       = aws_api_gateway_method.get-method.http_method
+  status_code       = aws_api_gateway_method_response.response_200.status_code
+  selection_pattern = ""
+
+
+}
+
+resource "aws_api_gateway_method_response" "response_404" {
+  rest_api_id = var.rest-api-id
+  resource_id = aws_api_gateway_resource.v2.id
+  http_method = aws_api_gateway_method.get-method.http_method
+  status_code = "404"
+}
+
+
+resource "aws_api_gateway_integration_response" "integration_response_404" {
+  rest_api_id       = var.rest-api-id
+  resource_id       = aws_api_gateway_resource.v2.id
+  http_method       = aws_api_gateway_method.get-method.http_method
+  status_code       = aws_api_gateway_method_response.response_404.status_code
+  selection_pattern = ".*not found.*"
+
+  response_templates = {
+    "application/json" = file("./templates/get-method-404-integration-request.vtl")
+  }
+
+
+}
+
+
+resource "aws_api_gateway_method_response" "response_500" {
+  rest_api_id = var.rest-api-id
+  resource_id = aws_api_gateway_resource.v2.id
+  http_method = aws_api_gateway_method.get-method.http_method
+  status_code = "500"
+}
+
+
+
+resource "aws_api_gateway_integration_response" "integration_response_500" {
+  rest_api_id       = var.rest-api-id
+  resource_id       = aws_api_gateway_resource.v2.id
+  http_method       = aws_api_gateway_method.get-method.http_method
+  status_code       = aws_api_gateway_method_response.response_500.status_code
+  selection_pattern = ".*Server Error.*"
+  response_templates = {
+    "application/json" = file("./templates/get-method-500-integration-request.vtl")
+  }
+
+
+}
+
+
+
+
+resource "aws_api_gateway_deployment" "api-deployment" {
+  depends_on = [
+    aws_api_gateway_method.get-method,
+    aws_api_gateway_integration.integration
+  ]
+
+  rest_api_id = var.rest-api-id
+  stage_name  = var.environment
+}

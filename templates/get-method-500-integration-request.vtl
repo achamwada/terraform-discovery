@@ -1,0 +1,6 @@
+#set ($response = $util.parseJson($input.path('$.errorMessage')))
+{
+  "statusCode" : $response.statusCode,
+  "message" : "$response.body",
+  "correlationId" : "$response.awsRequestId"
+}
