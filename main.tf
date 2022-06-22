@@ -67,19 +67,22 @@ resource "aws_lambda_function" "content-v2-asset" {
   }
 }
 
-resource "aws_api_gateway_resource" "content" {
+
+resource "aws_api_gateway_resource" "v2" {
   rest_api_id = var.rest-api-id
   parent_id   = var.root-resource-id
+  path_part   = "v2"
+
+}
+
+resource "aws_api_gateway_resource" "content" {
+  rest_api_id = var.rest-api-id
+  parent_id   = aws_api_gateway_resource.v2.id
   path_part   = "content"
 
 }
 
-resource "aws_api_gateway_resource" "v2" {
-  rest_api_id = var.rest-api-id
-  parent_id   = aws_api_gateway_resource.content.id
-  path_part   = "v2"
 
-}
 
 resource "aws_api_gateway_request_validator" "get-method" {
   name                        = "QueryRequestValidator"
@@ -89,8 +92,8 @@ resource "aws_api_gateway_request_validator" "get-method" {
 
 resource "aws_api_gateway_method" "get-method" {
   rest_api_id      = var.rest-api-id
-  resource_id      = aws_api_gateway_resource.v2.id
-  api_key_required = false
+  resource_id      = aws_api_gateway_resource.content.id
+  api_key_required = true
   authorization    = "NONE"
   http_method      = "GET"
 
@@ -106,7 +109,7 @@ resource "aws_api_gateway_method" "get-method" {
 
 resource "aws_api_gateway_integration" "integration" {
   rest_api_id             = var.rest-api-id
-  resource_id             = aws_api_gateway_resource.v2.id
+  resource_id             = aws_api_gateway_resource.content.id
   integration_http_method = "POST"
   http_method             = aws_api_gateway_method.get-method.http_method
   type                    = "AWS"
@@ -125,7 +128,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.content-v2-asset.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:eu-west-1:927362808381:${var.rest-api-id}/test-invoke-stage/GET/${aws_api_gateway_resource.content.path_part}/${aws_api_gateway_resource.v2.path_part}"
+  source_arn    = "arn:aws:execute-api:eu-west-1:927362808381:${var.rest-api-id}/*/GET/${aws_api_gateway_resource.v2.path_part}/${aws_api_gateway_resource.content.path_part}"
 }
 
 
@@ -133,7 +136,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
 
 resource "aws_api_gateway_method_response" "response_200" {
   rest_api_id = var.rest-api-id
-  resource_id = aws_api_gateway_resource.v2.id
+  resource_id = aws_api_gateway_resource.content.id
   http_method = aws_api_gateway_method.get-method.http_method
   status_code = "200"
 
@@ -141,7 +144,7 @@ resource "aws_api_gateway_method_response" "response_200" {
 
 resource "aws_api_gateway_integration_response" "integration_response_200" {
   rest_api_id       = var.rest-api-id
-  resource_id       = aws_api_gateway_resource.v2.id
+  resource_id       = aws_api_gateway_resource.content.id
   http_method       = aws_api_gateway_method.get-method.http_method
   status_code       = aws_api_gateway_method_response.response_200.status_code
   selection_pattern = ""
@@ -163,7 +166,7 @@ resource "aws_api_gateway_integration_response" "integration_response_200" {
 resource "aws_api_gateway_model" "error-404" {
   rest_api_id  = var.rest-api-id
   name         = "error404"
-  description  = "a JSON schema"
+  description  = "404 error response schema"
   content_type = "application/json"
 
   schema = file("./templates/schemas/_404.json")
@@ -174,7 +177,7 @@ resource "aws_api_gateway_model" "error-404" {
 resource "aws_api_gateway_model" "error-500" {
   rest_api_id  = var.rest-api-id
   name         = "error500"
-  description  = "a JSON schema"
+  description  = "500 error response schema"
   content_type = "application/json"
 
   schema = file("./templates/schemas/_500.json")
@@ -189,7 +192,7 @@ resource "aws_api_gateway_model" "error-500" {
 
 resource "aws_api_gateway_method_response" "response_404" {
   rest_api_id = var.rest-api-id
-  resource_id = aws_api_gateway_resource.v2.id
+  resource_id = aws_api_gateway_resource.content.id
   http_method = aws_api_gateway_method.get-method.http_method
   status_code = "404"
 
@@ -201,7 +204,7 @@ resource "aws_api_gateway_method_response" "response_404" {
 
 resource "aws_api_gateway_integration_response" "integration_response_404" {
   rest_api_id       = var.rest-api-id
-  resource_id       = aws_api_gateway_resource.v2.id
+  resource_id       = aws_api_gateway_resource.content.id
   http_method       = aws_api_gateway_method.get-method.http_method
   status_code       = aws_api_gateway_method_response.response_404.status_code
   selection_pattern = ".*not found.*"
@@ -220,7 +223,7 @@ resource "aws_api_gateway_integration_response" "integration_response_404" {
 
 resource "aws_api_gateway_method_response" "response_500" {
   rest_api_id = var.rest-api-id
-  resource_id = aws_api_gateway_resource.v2.id
+  resource_id = aws_api_gateway_resource.content.id
   http_method = aws_api_gateway_method.get-method.http_method
   status_code = "500"
 
@@ -233,7 +236,7 @@ resource "aws_api_gateway_method_response" "response_500" {
 
 resource "aws_api_gateway_integration_response" "integration_response_500" {
   rest_api_id       = var.rest-api-id
-  resource_id       = aws_api_gateway_resource.v2.id
+  resource_id       = aws_api_gateway_resource.content.id
   http_method       = aws_api_gateway_method.get-method.http_method
   status_code       = aws_api_gateway_method_response.response_500.status_code
   selection_pattern = ".*Server Error.*"
