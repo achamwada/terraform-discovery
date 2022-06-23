@@ -6,6 +6,10 @@ terraform {
 
 }
 
+provider "aws" {
+  profile = "deploy-agent"
+}
+
 variable "account" {
   type    = string
   default = "non-prod"
@@ -16,17 +20,14 @@ variable "environment" {
   type = string
 }
 
-variable "rest-api-id" {
-  type = string
-}
+# variable "rest-api-id" {
+#   type = string
+# }
 
-variable "root-resource-id" {
-  type = string
-}
+# variable "root-resource-id" {
+#   type = string
+# }
 
-provider "aws" {
-  profile = "deploy-agent"
-}
 
 resource "aws_vpc" "my-vpc" {
   cidr_block = "10.0.0.0/16"
@@ -63,29 +64,28 @@ resource "aws_lambda_function" "content-v2-asset" {
 
 
 resource "aws_api_gateway_resource" "v2" {
-  rest_api_id = var.rest-api-id
-  parent_id   = var.root-resource-id
+  rest_api_id = data.aws_ssm_parameter.rest-api-id.value
+  parent_id   = data.aws_ssm_parameter.root-resource-id.value
   path_part   = "v2"
 
 }
 
 resource "aws_api_gateway_resource" "content" {
-  rest_api_id = var.rest-api-id
+  rest_api_id = data.aws_ssm_parameter.rest-api-id.value
   parent_id   = aws_api_gateway_resource.v2.id
   path_part   = "content"
 
 }
 
 
-
 resource "aws_api_gateway_request_validator" "get-method" {
   name                        = "QueryRequestValidator"
-  rest_api_id                 = var.rest-api-id
+  rest_api_id                 = data.aws_ssm_parameter.rest-api-id.value
   validate_request_parameters = true
 }
 
 resource "aws_api_gateway_method" "get-method" {
-  rest_api_id      = var.rest-api-id
+  rest_api_id      = data.aws_ssm_parameter.rest-api-id.value
   resource_id      = aws_api_gateway_resource.content.id
   api_key_required = true
   authorization    = "NONE"
@@ -102,7 +102,7 @@ resource "aws_api_gateway_method" "get-method" {
 
 
 resource "aws_api_gateway_integration" "integration" {
-  rest_api_id             = var.rest-api-id
+  rest_api_id             = data.aws_ssm_parameter.rest-api-id.value
   resource_id             = aws_api_gateway_resource.content.id
   integration_http_method = "POST"
   http_method             = aws_api_gateway_method.get-method.http_method
@@ -122,14 +122,14 @@ resource "aws_lambda_permission" "apigw_lambda" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.content-v2-asset.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:eu-west-1:927362808381:${var.rest-api-id}/*/GET/${aws_api_gateway_resource.v2.path_part}/${aws_api_gateway_resource.content.path_part}"
+  source_arn    = "arn:aws:execute-api:eu-west-1:927362808381:${data.aws_ssm_parameter.rest-api-id.value}/*/GET/${aws_api_gateway_resource.v2.path_part}/${aws_api_gateway_resource.content.path_part}"
 }
 
 
 
 
 resource "aws_api_gateway_method_response" "response_200" {
-  rest_api_id = var.rest-api-id
+  rest_api_id = data.aws_ssm_parameter.rest-api-id.value
   resource_id = aws_api_gateway_resource.content.id
   http_method = aws_api_gateway_method.get-method.http_method
   status_code = "200"
@@ -137,7 +137,7 @@ resource "aws_api_gateway_method_response" "response_200" {
 }
 
 resource "aws_api_gateway_integration_response" "integration_response_200" {
-  rest_api_id       = var.rest-api-id
+  rest_api_id       = data.aws_ssm_parameter.rest-api-id.value
   resource_id       = aws_api_gateway_resource.content.id
   http_method       = aws_api_gateway_method.get-method.http_method
   status_code       = aws_api_gateway_method_response.response_200.status_code
@@ -158,7 +158,7 @@ resource "aws_api_gateway_integration_response" "integration_response_200" {
 
 
 resource "aws_api_gateway_model" "error-404" {
-  rest_api_id  = var.rest-api-id
+  rest_api_id  = data.aws_ssm_parameter.rest-api-id.value
   name         = "error404"
   description  = "404 error response schema"
   content_type = "application/json"
@@ -169,7 +169,7 @@ resource "aws_api_gateway_model" "error-404" {
 
 
 resource "aws_api_gateway_model" "error-500" {
-  rest_api_id  = var.rest-api-id
+  rest_api_id  = data.aws_ssm_parameter.rest-api-id.value
   name         = "error500"
   description  = "500 error response schema"
   content_type = "application/json"
@@ -185,7 +185,7 @@ resource "aws_api_gateway_model" "error-500" {
 
 
 resource "aws_api_gateway_method_response" "response_404" {
-  rest_api_id = var.rest-api-id
+  rest_api_id = data.aws_ssm_parameter.rest-api-id.value
   resource_id = aws_api_gateway_resource.content.id
   http_method = aws_api_gateway_method.get-method.http_method
   status_code = "404"
@@ -197,7 +197,7 @@ resource "aws_api_gateway_method_response" "response_404" {
 
 
 resource "aws_api_gateway_integration_response" "integration_response_404" {
-  rest_api_id       = var.rest-api-id
+  rest_api_id       = data.aws_ssm_parameter.rest-api-id.value
   resource_id       = aws_api_gateway_resource.content.id
   http_method       = aws_api_gateway_method.get-method.http_method
   status_code       = aws_api_gateway_method_response.response_404.status_code
@@ -216,7 +216,7 @@ resource "aws_api_gateway_integration_response" "integration_response_404" {
 
 
 resource "aws_api_gateway_method_response" "response_500" {
-  rest_api_id = var.rest-api-id
+  rest_api_id = data.aws_ssm_parameter.rest-api-id.value
   resource_id = aws_api_gateway_resource.content.id
   http_method = aws_api_gateway_method.get-method.http_method
   status_code = "500"
@@ -229,7 +229,7 @@ resource "aws_api_gateway_method_response" "response_500" {
 
 
 resource "aws_api_gateway_integration_response" "integration_response_500" {
-  rest_api_id       = var.rest-api-id
+  rest_api_id       = data.aws_ssm_parameter.rest-api-id.value
   resource_id       = aws_api_gateway_resource.content.id
   http_method       = aws_api_gateway_method.get-method.http_method
   status_code       = aws_api_gateway_method_response.response_500.status_code
@@ -254,6 +254,6 @@ resource "aws_api_gateway_deployment" "api-deployment" {
     aws_api_gateway_integration.integration
   ]
 
-  rest_api_id = var.rest-api-id
+  rest_api_id = data.aws_ssm_parameter.rest-api-id.value
   stage_name  = var.environment
 }
