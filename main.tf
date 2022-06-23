@@ -2,14 +2,6 @@ provider "aws" {
   profile = "deploy-agent"
 }
 
-resource "aws_vpc" "my-vpc" {
-  cidr_block = "10.0.0.0/16"
-  tags = {
-    Name       = "${var.account}-vpc"
-    created_by = "Terraform"
-  }
-}
-
 resource "aws_iam_role" "iam_for_lambda" {
   name = "iam_for_lambda"
 
@@ -95,7 +87,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.content-v2-asset.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:eu-west-1:927362808381:${data.aws_ssm_parameter.rest-api-id.value}/*/GET/${aws_api_gateway_resource.v2.path_part}/${aws_api_gateway_resource.content.path_part}"
+  source_arn    = "arn:aws:execute-api:${var.aws-region}:${var.aws-account-id}:${data.aws_ssm_parameter.rest-api-id.value}/*/GET/${aws_api_gateway_resource.v2.path_part}/${aws_api_gateway_resource.content.path_part}"
 }
 
 
