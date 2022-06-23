@@ -13,21 +13,15 @@ variable "account" {
 }
 
 variable "environment" {
-  type    = string
-  default = "dev1-blue"
-
+  type = string
 }
 
 variable "rest-api-id" {
-  type    = string
-  default = "10c810tp72"
-
+  type = string
 }
 
 variable "root-resource-id" {
-  type    = string
-  default = "4ryexcq2n3"
-
+  type = string
 }
 
 provider "aws" {
