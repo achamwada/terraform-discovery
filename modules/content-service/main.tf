@@ -51,7 +51,7 @@ resource "aws_api_gateway_request_validator" "get-method" {
 resource "aws_api_gateway_method" "get-method" {
   rest_api_id      = var.rest-api-id
   resource_id      = aws_api_gateway_resource.v2.id
-  api_key_required = false
+  api_key_required = true
   authorization    = "NONE"
   http_method      = "GET"
 
@@ -129,6 +129,25 @@ resource "aws_api_gateway_deployment" "api-deployment" {
   lifecycle {
     create_before_destroy = true
   }
+}
+
+resource "aws_api_gateway_usage_plan" "api_usage_plan" {
+  name = "full-access"
+
+  api_stages {
+    api_id = var.rest-api-id
+    stage  = var.environment
+  }
+}
+
+resource "aws_api_gateway_api_key" "api_key" {
+  name = "${var.environment}_key"
+}
+
+resource "aws_api_gateway_usage_plan_key" "main" {
+  key_id        = aws_api_gateway_api_key.api_key.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.api_usage_plan.id
 }
 
 
