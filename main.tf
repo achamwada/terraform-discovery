@@ -1,5 +1,5 @@
 provider "aws" {
-  profile = "deploy-agent"
+  profile = "ci-agent"
 }
 
 resource "aws_iam_role" "iam_for_lambda" {
@@ -108,6 +108,7 @@ module "method-models" {
 
 
 resource "aws_api_gateway_deployment" "api-deployment" {
+  description = "Automatic deployment"
   depends_on = [
     aws_api_gateway_method.get-method,
     aws_api_gateway_integration.integration
@@ -115,4 +116,18 @@ resource "aws_api_gateway_deployment" "api-deployment" {
 
   rest_api_id = data.aws_ssm_parameter.rest-api-id.value
   stage_name  = var.environment
+
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.v2,
+      aws_api_gateway_resource.content,
+      aws_api_gateway_integration.integration,
+      aws_api_gateway_method.get-method
+      ]
+      ))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
