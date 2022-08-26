@@ -27,17 +27,17 @@ resource "aws_lambda_function" "content-v2-asset" {
 
 
 
-resource "aws_api_gateway_resource" "v2" {
+resource "aws_api_gateway_resource" "content-service" {
   rest_api_id = data.aws_ssm_parameter.rest-api-id.value
   parent_id   = data.aws_ssm_parameter.root-resource-id.value
-  path_part   = "v2"
+  path_part   = "content-service"
 
 }
 
-resource "aws_api_gateway_resource" "content" {
+resource "aws_api_gateway_resource" "v2" {
   rest_api_id = data.aws_ssm_parameter.rest-api-id.value
-  parent_id   = aws_api_gateway_resource.v2.id
-  path_part   = "content"
+  parent_id   = aws_api_gateway_resource.content-service.id
+  path_part   = "v2"
 
 }
 
@@ -50,7 +50,7 @@ resource "aws_api_gateway_request_validator" "get-method" {
 
 resource "aws_api_gateway_method" "get-method" {
   rest_api_id      = data.aws_ssm_parameter.rest-api-id.value
-  resource_id      = aws_api_gateway_resource.content.id
+  resource_id      = aws_api_gateway_resource.v2.id
   api_key_required = true
   authorization    = "NONE"
   http_method      = "GET"
@@ -67,7 +67,7 @@ resource "aws_api_gateway_method" "get-method" {
 
 resource "aws_api_gateway_integration" "integration" {
   rest_api_id             = data.aws_ssm_parameter.rest-api-id.value
-  resource_id             = aws_api_gateway_resource.content.id
+  resource_id             = aws_api_gateway_resource.v2.id
   integration_http_method = "POST"
   http_method             = aws_api_gateway_method.get-method.http_method
   type                    = "AWS"
@@ -86,7 +86,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.content-v2-asset.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${var.aws-region}:${var.aws-account-id}:${data.aws_ssm_parameter.rest-api-id.value}/*/GET/${aws_api_gateway_resource.v2.path_part}/${aws_api_gateway_resource.content.path_part}"
+  source_arn    = "arn:aws:execute-api:${var.aws-region}:${var.aws-account-id}:${data.aws_ssm_parameter.rest-api-id.value}/*/GET/${aws_api_gateway_resource.content-service.path_part}/${aws_api_gateway_resource.v2.path_part}"
 }
 
 
@@ -95,7 +95,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
 module "method-models" {
   source      = "../../modules/api-gateway-response-schemas"
   rest-api-id = data.aws_ssm_parameter.rest-api-id.value
-  resource_id = aws_api_gateway_resource.content.id
+  resource_id = aws_api_gateway_resource.v2.id
   http_method = aws_api_gateway_method.get-method.http_method
 
   integration = aws_api_gateway_integration.integration
@@ -118,8 +118,8 @@ resource "aws_api_gateway_deployment" "api-deployment" {
 
   triggers = {
     redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.content-service,
       aws_api_gateway_resource.v2,
-      aws_api_gateway_resource.content,
       aws_api_gateway_integration.integration,
       aws_api_gateway_method.get-method
       ]
