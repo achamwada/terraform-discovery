@@ -51,7 +51,7 @@ resource "aws_api_gateway_request_validator" "get-method" {
 resource "aws_api_gateway_method" "get-method" {
   rest_api_id      = var.rest-api-id
   resource_id      = aws_api_gateway_resource.v2.id
-  api_key_required = true
+  api_key_required = false
   authorization    = "NONE"
   http_method      = "GET"
 
@@ -132,6 +132,9 @@ resource "aws_api_gateway_deployment" "api-deployment" {
 }
 
 resource "aws_api_gateway_usage_plan" "api_usage_plan" {
+  depends_on = [
+    aws_api_gateway_deployment.api-deployment
+  ]
   name = "full-access"
 
   api_stages {
