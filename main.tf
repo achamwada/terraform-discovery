@@ -8,7 +8,7 @@ resource "aws_vpc_endpoint" "digital" {
   vpc_endpoint_type   = "Interface"
   private_dns_enabled = true
 
-  subnet_ids         = ["subnet-01289d2536c08a97a","subnet-01c949841f0dc1bd6","subnet-0e17b95d1adc95130"]
+  subnet_ids         = ["subnet-01289d2536c08a97a", "subnet-01c949841f0dc1bd6", "subnet-0e17b95d1adc95130"]
   security_group_ids = [data.aws_security_group.default-sg.id]
 
   tags = {
@@ -37,7 +37,7 @@ resource "aws_ssm_parameter" "rest-api-id" {
   value       = aws_api_gateway_rest_api.digital.id
 
   tags = {
-    environment = "production"
+    environment = var.environment
   }
 }
 
@@ -48,16 +48,26 @@ resource "aws_ssm_parameter" "root-resource-id" {
   value       = aws_api_gateway_rest_api.digital.root_resource_id
 
   tags = {
-    environment = "production"
+    environment = var.environment
   }
 }
 
 
 
 module "content-service" {
-  source      = "./modules/content-service"
-  environment = var.environment
-  aws-region = var.aws-region
+  source         = "./modules/content-service"
+  environment    = var.environment
+  aws-region     = var.aws-region
   aws-account-id = var.aws-account-id
+  rest-api-id    = aws_api_gateway_rest_api.digital.id
+  resource-id    = aws_api_gateway_rest_api.digital.root_resource_id
 }
 
+
+output "api-url" {
+  value = "https://${aws_api_gateway_rest_api.digital.id}-${aws_vpc_endpoint.digital.id}.execute-api.${var.aws-region}.amazonaws.com/${var.environment}"
+}
+
+output "api-gateway-url" {
+  value = module.content-service.api-gateway-url
+}

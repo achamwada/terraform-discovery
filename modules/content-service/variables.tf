@@ -17,3 +17,12 @@ variable "aws-region" {
 variable "environment" {
   type = string
 }
+
+variable "rest-api-id" {
+  type = string
+}
+
+variable "resource-id" {
+  type = string
+}
+
